@@ -29,11 +29,18 @@
       <div class="container cart-page">
         <div class="section-head">
           <h1>Your cart</h1>
+          <span class="cart-meta" id="cart-item-count"></span>
         </div>
         <div id="cart-items" class="cart-items"></div>
         <div class="cart-summary">
-          <h3>Total: <span id="cart-total">$0.00</span></h3>
-          <button class="btn btn-primary" id="checkout-btn">Checkout</button>
+          <div class="cart-summary-line">
+            <span>Order total</span>
+            <strong id="cart-total">$0.00</strong>
+          </div>
+          <div class="cart-summary-actions">
+            <button class="btn btn-secondary" id="clear-cart-btn">Clear cart</button>
+            <button class="btn btn-primary" id="checkout-btn">Checkout</button>
+          </div>
         </div>
       </div>
     </main>

@@ -6,15 +6,18 @@ import {
   deleteDoc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const getCartRef = () => {
   const user = auth.currentUser;
   return user ? doc(db, "users", user.uid, "cart", "items") : null;
 };
 
+// ─── CRUD ─────────────────────────────────────────────────────────────────────
+
 export const getCart = async () => {
   const ref = getCartRef();
   if (!ref) return [];
-
   const snapshot = await getDoc(ref);
   return snapshot.exists() ? snapshot.data().items || [] : [];
 };
@@ -26,11 +29,9 @@ export const saveCart = async (cart) => {
 };
 
 export const addToCart = async (product) => {
-  const user = auth.currentUser;
-  if (!user) {
-    alert("Please log in before adding items to your cart.");
-    window.location.href = "login.html";
-    return;
+  if (!auth.currentUser) {
+    // Show a non-blocking notice instead of an abrupt redirect
+    return { needsLogin: true };
   }
 
   const cart = await getCart();
@@ -43,19 +44,19 @@ export const addToCart = async (product) => {
   }
 
   await saveCart(cart);
-  updateCartCount();
+  await updateCartCount();
+  return { needsLogin: false };
 };
 
 export const removeFromCart = async (productId) => {
   const cart = await getCart();
   await saveCart(cart.filter((item) => item.id !== productId));
-  updateCartCount();
+  await updateCartCount();
 };
 
 export const updateQuantity = async (productId, delta) => {
   const cart = await getCart();
   const item = cart.find((entry) => entry.id === productId);
-
   if (!item) return;
 
   item.quantity += delta;
@@ -66,22 +67,24 @@ export const updateQuantity = async (productId, delta) => {
   }
 
   await saveCart(cart);
-  updateCartCount();
+  await updateCartCount();
 };
 
 export const clearCart = async () => {
   const ref = getCartRef();
   if (ref) await deleteDoc(ref);
-  updateCartCount();
+  await updateCartCount();
 };
 
 export const getCartTotal = (cart) =>
-  cart.reduce((total, item) => total + Number(item.price) * item.quantity, 0);
+  cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+
+export const getCartItemCount = (cart) =>
+  cart.reduce((sum, item) => sum + item.quantity, 0);
 
 export const updateCartCount = async () => {
   const cart = await getCart();
-  const count = cart.reduce((total, item) => total + item.quantity, 0);
-
+  const count = getCartItemCount(cart);
   document.querySelectorAll("#cart-count, .cart-count").forEach((node) => {
     node.textContent = count;
   });
