@@ -27,7 +27,9 @@
 
     <main class="auth-page section">
       <div class="container auth-shell">
-        <div class="auth-card">
+
+        <!-- Login card -->
+        <div class="auth-card" id="card-login">
           <h1>Welcome back</h1>
           <p>Sign in to track orders and save your favorites.</p>
           <form id="login-form" class="auth-form">
@@ -52,9 +54,73 @@
             <button type="submit" class="btn btn-primary">Login</button>
           </form>
           <p id="auth-message" class="auth-message"></p>
+          <p class="auth-switch">
+            Don't have an account?
+            <button class="link-btn" id="show-signup">Create one</button>
+          </p>
         </div>
+
+        <!-- Sign-up card (hidden by default) -->
+        <div class="auth-card" id="card-signup" hidden>
+          <h1>Create account</h1>
+          <p>Join Urban Threads and start shopping.</p>
+          <form id="signup-form" class="auth-form">
+            <label>
+              Email
+              <input
+                type="email"
+                id="signup-email"
+                placeholder="you@example.com"
+                required
+              />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                id="signup-password"
+                placeholder="At least 6 characters"
+                required
+              />
+            </label>
+            <label>
+              Confirm password
+              <input
+                type="password"
+                id="signup-confirm"
+                placeholder="Repeat your password"
+                required
+              />
+            </label>
+            <button type="submit" class="btn btn-primary">Create account</button>
+          </form>
+          <p id="signup-message" class="auth-message"></p>
+          <p class="auth-switch">
+            Already have an account?
+            <button class="link-btn" id="show-login">Sign in</button>
+          </p>
+        </div>
+
       </div>
     </main>
+
+    <script>
+      // Toggle between the two cards without a page reload
+      document.addEventListener("DOMContentLoaded", () => {
+        const loginCard  = document.getElementById("card-login");
+        const signupCard = document.getElementById("card-signup");
+
+        document.getElementById("show-signup").addEventListener("click", () => {
+          loginCard.hidden  = true;
+          signupCard.hidden = false;
+        });
+
+        document.getElementById("show-login").addEventListener("click", () => {
+          signupCard.hidden = true;
+          loginCard.hidden  = false;
+        });
+      });
+    </script>
 
     <footer class="site-footer">
       <div class="container footer-inner">

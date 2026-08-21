@@ -14,10 +14,13 @@ import {
 } from "./cart.js";
 import {
   loginUser,
+  signupUser,
   logoutUser,
   watchAuthState,
 } from "./auth.js";
 import { auth } from "./firebase-config.js";
+
+// ─── Product rendering ────────────────────────────────────────────────────────
 
 const renderProductCard = (product) => {
   const image = product.image
@@ -66,6 +69,8 @@ const buildProducts = (items, targetId) => {
     });
   });
 };
+
+// ─── Cart page ────────────────────────────────────────────────────────────────
 
 const renderCartPage = async () => {
   const cartItems = document.getElementById("cart-items");
@@ -133,6 +138,8 @@ const renderCartPage = async () => {
   }
 };
 
+// ─── Auth forms ───────────────────────────────────────────────────────────────
+
 const initLoginForm = () => {
   const form = document.getElementById("login-form");
   const message = document.getElementById("auth-message");
@@ -162,6 +169,44 @@ const initLoginForm = () => {
   });
 };
 
+const initSignupForm = () => {
+  const form = document.getElementById("signup-form");
+  const message = document.getElementById("signup-message");
+
+  if (!form || !message) return;
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById("signup-email").value;
+    const password = document.getElementById("signup-password").value;
+    const confirm = document.getElementById("signup-confirm").value;
+
+    if (password !== confirm) {
+      message.textContent = "Passwords do not match.";
+      message.classList.add("error");
+      return;
+    }
+
+    message.textContent = "Creating account...";
+    message.classList.remove("error");
+
+    const result = await signupUser(email, password);
+
+    message.textContent = result.message;
+    message.classList.toggle("error", !result.success);
+
+    if (result.success) {
+      form.reset();
+      setTimeout(() => {
+        window.location.href = "shop.html";
+      }, 700);
+    }
+  });
+};
+
+// ─── Navbar ───────────────────────────────────────────────────────────────────
+
 const updateNavbar = (user) => {
   const loginLink = document.querySelector('.nav a[href="login.html"]');
   if (!loginLink) return;
@@ -183,16 +228,37 @@ const updateNavbar = (user) => {
   }
 };
 
+// ─── Cart protection (waits for auth state before deciding) ──────────────────
+
+/**
+ * Returns a Promise that resolves with the current Firebase user (or null)
+ * after the SDK has confirmed the auth state. This avoids the race condition
+ * where auth.currentUser is null immediately after page load even for
+ * already-signed-in users.
+ */
+const waitForAuthState = () =>
+  new Promise((resolve) => {
+    const unsubscribe = watchAuthState((user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+
 const protectCartPage = async () => {
+  // Only runs on the cart page
   if (!document.getElementById("cart-items")) return;
 
-  if (!auth.currentUser) {
+  const user = await waitForAuthState();
+
+  if (!user) {
     window.location.href = "login.html";
     return;
   }
 
   await renderCartPage();
 };
+
+// ─── Checkout ─────────────────────────────────────────────────────────────────
 
 const initCheckout = () => {
   const button = document.getElementById("checkout-btn");
@@ -218,15 +284,22 @@ const initCheckout = () => {
   });
 };
 
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+
 const initializeApp = async () => {
   initLoginForm();
+  initSignupForm();
   initCheckout();
+
+  // Protect cart page first — waits for real auth state before redirecting
+  await protectCartPage();
 
   watchAuthState(async (user) => {
     updateNavbar(user);
 
     if (user) {
       await updateCartCount();
+      // Re-render the cart if we're on that page and just became authenticated
       await renderCartPage();
     } else {
       document.querySelectorAll("#cart-count, .cart-count").forEach((node) => {
@@ -243,8 +316,7 @@ const initializeApp = async () => {
   } catch (error) {
     console.error("Error loading products from Firestore:", error);
 
-    const targets = ["featured-products", "shop-products"];
-    targets.forEach((id) => {
+    ["featured-products", "shop-products"].forEach((id) => {
       const target = document.getElementById(id);
       if (target) {
         target.innerHTML =
@@ -252,8 +324,6 @@ const initializeApp = async () => {
       }
     });
   }
-
-  await protectCartPage();
 };
 
 document.addEventListener("DOMContentLoaded", initializeApp);
